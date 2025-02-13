@@ -6,12 +6,26 @@ package frc.robot;
 
 import java.util.Optional;
 
+import org.ironmaple.simulation.SimulatedArena;
+import org.ironmaple.simulation.seasonspecific.reefscape2025.ReefscapeAlgaeOnField;
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.targeting.PhotonTrackedTarget;
+import org.littletonrobotics.junction.LogFileUtil;
+import org.littletonrobotics.junction.LoggedRobot;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.NT4Publisher;
+import org.littletonrobotics.junction.wpilog.WPILOGReader;
+import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.subsystems.SwerveSubsystem;
@@ -22,7 +36,7 @@ import frc.robot.subsystems.VisionSubsystem;
  * the TimedRobot documentation. If you change the name of this class or the package after creating
  * this project, you must also update the Main.java file in the project.
  */
-public class Robot extends TimedRobot {
+public class Robot extends LoggedRobot {
   private Command m_autonomousCommand;
   private SwerveSubsystem swerve = new SwerveSubsystem();
   private VisionSubsystem vision = new VisionSubsystem();
@@ -37,6 +51,13 @@ public class Robot extends TimedRobot {
   public Robot() {
     // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
     // autonomous chooser on the dashboard.
+    Logger.recordMetadata("RobotSim", "MapleSimTest");
+
+    if (isSimulation()) {
+      Logger.addDataReceiver(new NT4Publisher());
+    }
+
+    Logger.start();
     m_robotContainer = new RobotContainer();
   }
 
@@ -139,9 +160,27 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when the robot is first started up. */
   @Override
-  public void simulationInit() {}
+  public void simulationInit() {
+    SimulatedArena.getInstance().resetFieldForAuto();
+    //SimulatedArena.getInstance().addGamePiece(new ReefscapeAlgaeOnField(new Translation2d(2,2)));
+  }
 
   /** This function is called periodically whilst in simulation. */
   @Override
-  public void simulationPeriodic() {}
+  public void simulationPeriodic() {
+    SimulatedArena.getInstance().simulationPeriodic();
+    Logger.recordOutput("FieldSimulation/Algae", 
+    SimulatedArena.getInstance().getGamePiecesArrayByType("Algae"));
+    Logger.recordOutput("FieldSimulation/Coral", 
+    SimulatedArena.getInstance().getGamePiecesArrayByType("Coral"));
+
+    Logger.recordOutput("RobotPose", new Pose2d());
+    Logger.recordOutput("ZeroedComponentPoses", new Pose3d[] {new Pose3d(), new Pose3d(), new Pose3d(), new Pose3d(), new Pose3d(), new Pose3d()});
+    Logger.recordOutput("FinalComponentPoses", new Pose3d[] {new Pose3d(0, 0, 0, new Rotation3d(0.0, Math.sin(Timer.getTimestamp()) - 1.0, 0.0)),
+      new Pose3d(0, 0, 0, new Rotation3d(0.0, Math.sin(Timer.getTimestamp()) - 1.0, 0.0)),
+      new Pose3d(0, 0, 0, new Rotation3d(0.0, Math.sin(Timer.getTimestamp()) - 1.0, 0.0)),
+      new Pose3d(0, 0, 0, new Rotation3d(0.0, Math.sin(Timer.getTimestamp()) - 1.0, 0.0)),
+      new Pose3d(0, 0, 0, new Rotation3d(0.0, Math.sin(Timer.getTimestamp()) - 1.0, 0.0)),
+      new Pose3d(0, 0, 0, new Rotation3d(0.0, Math.sin(Timer.getTimestamp()) - 1.0, 0.0))});
+  }
 }
