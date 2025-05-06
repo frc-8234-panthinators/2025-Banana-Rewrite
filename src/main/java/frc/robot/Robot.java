@@ -10,6 +10,9 @@ import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.seasonspecific.reefscape2025.ReefscapeAlgaeOnField;
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.targeting.PhotonTrackedTarget;
+
+import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
+
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
@@ -17,6 +20,7 @@ import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -26,10 +30,17 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.subsystems.AlgaeSubsystem;
+import frc.robot.subsystems.ElevatorSubsystem;
+import frc.robot.subsystems.ManipulatorSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
+import frc.robot.subsystems.CoralSubsystem;
+
+import edu.wpi.first.networktables.NetworkTableInstance;
 
 /**
  * The methods in this class are called automatically corresponding to each mode, as described in
@@ -41,6 +52,11 @@ public class Robot extends LoggedRobot {
   private SwerveSubsystem swerve = new SwerveSubsystem();
   private VisionSubsystem vision = new VisionSubsystem();
   private XBoxContainer xBox = new XBoxContainer();
+  private ElevatorSubsystem elevator = new ElevatorSubsystem();
+  private ManipulatorSubsystem manipulator = new ManipulatorSubsystem();
+  private AlgaeSubsystem algae = new AlgaeSubsystem();
+  private CoralSubsystem coral = new CoralSubsystem();
+  private double lastPos = 0;
 
   private final RobotContainer m_robotContainer;
 
@@ -58,7 +74,7 @@ public class Robot extends LoggedRobot {
     }
 
     Logger.start();
-    m_robotContainer = new RobotContainer();
+    m_robotContainer = new RobotContainer(swerve, xBox, elevator, manipulator, vision, algae, coral);
   }
 
   /**
@@ -76,7 +92,7 @@ public class Robot extends LoggedRobot {
     // block in order for anything in the Command-based framework to work.
     CommandScheduler.getInstance().run();
     
-    Optional<EstimatedRobotPose> poseGerry = vision.getEstimatedGerryPose();
+    /*Optional<EstimatedRobotPose> poseGerry = vision.getEstimatedGerryPose();
     if (poseGerry.isPresent()) {
       EstimatedRobotPose poseReal = poseGerry.get();
       double lowestAmbiguity = 1;
@@ -88,20 +104,23 @@ public class Robot extends LoggedRobot {
       if (lowestAmbiguity < 0.2) {
         swerve.addVisionMeasurement(poseReal.estimatedPose.toPose2d(), poseReal.timestampSeconds);
       }
-    }
+    }*/
     Optional<EstimatedRobotPose> poseGeoffery = vision.getEstimatedGeofferyPose();
     if (poseGeoffery.isPresent()) {
       EstimatedRobotPose poseReal = poseGeoffery.get();
       double lowestAmbiguity = 1;
-      for (PhotonTrackedTarget target : poseReal.targetsUsed) {
-        if (target.getPoseAmbiguity() < lowestAmbiguity) {
-          lowestAmbiguity = target.getPoseAmbiguity();
-        }
-      }
-      if (lowestAmbiguity < 0.2) {
-        swerve.addVisionMeasurement(poseReal.estimatedPose.toPose2d(), poseReal.timestampSeconds);
+    
+    for (PhotonTrackedTarget target : poseReal.targetsUsed) {
+      if (target.getPoseAmbiguity() < lowestAmbiguity) {
+        lowestAmbiguity = target.getPoseAmbiguity();
       }
     }
+    if (lowestAmbiguity <= 0.1) {
+      var stdDevs = vision.calculateStdDevs(poseReal);
+      var newPose = new Pose2d(poseReal.estimatedPose.toPose2d().getX(), poseReal.estimatedPose.toPose2d().getY(), swerve.getHeading());
+      swerve.addVisionMeasurement(poseReal.estimatedPose.toPose2d(), poseReal.timestampSeconds, stdDevs);
+    }
+}
 
     swerve.updateOdometry();
   }
@@ -116,6 +135,7 @@ public class Robot extends LoggedRobot {
   /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
   @Override
   public void autonomousInit() {
+    vision.setEnabled(true);
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
     // schedule the autonomous command (example)
@@ -137,15 +157,42 @@ public class Robot extends LoggedRobot {
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
+    manipulator.setPosition(0);
+    vision.setEnabled(false);
   }
 
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
+
+    //manipulator.setPosition(0);
     swerve.drive(new Translation2d(xBox.driveY() * -1, xBox.driveX() * -1), xBox.rotate() * -1);
     if (xBox.getControllerXButton() == true) {
       swerve.resetHeading();
     }
+
+    algae.getCurrent();
+
+    /*if (Math.abs(xBox.elevatorManual()) > 0.1) {
+      manipulator.setSpeed(xBox.elevatorManual() * 0.1);
+      lastPos = manipulator.getPosition();
+    } else {
+      manipulator.setPosition(lastPos);
+    }*/
+
+    /*if (xBox.runAlgae()) {
+      algae.intakeAlgae();
+    } else {
+      algae.outtakeAlgae();
+    }*/
+
+    /*if (xBox.runCoral()) {
+      coral.intakeCoral();
+    } else if (xBox.outtakeCoral()) {
+      coral.outtakeCoral();
+    } else {
+      coral.stopCoral();
+    }*/
   }
 
   @Override
@@ -173,6 +220,8 @@ public class Robot extends LoggedRobot {
     SimulatedArena.getInstance().getGamePiecesArrayByType("Algae"));
     Logger.recordOutput("FieldSimulation/Coral", 
     SimulatedArena.getInstance().getGamePiecesArrayByType("Coral"));
+
+    vision.updateVisionSim(swerve.getPose());
 
     Logger.recordOutput("RobotPose", new Pose2d());
     Logger.recordOutput("ZeroedComponentPoses", new Pose3d[] {new Pose3d(), new Pose3d(), new Pose3d(), new Pose3d(), new Pose3d(), new Pose3d()});
