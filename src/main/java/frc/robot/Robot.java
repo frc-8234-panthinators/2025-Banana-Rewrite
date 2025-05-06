@@ -7,44 +7,20 @@ package frc.robot;
 import java.util.Optional;
 
 import org.ironmaple.simulation.SimulatedArena;
-import org.ironmaple.simulation.seasonspecific.reefscape2025.ReefscapeAlgaeOnField;
-import org.ironmaple.simulation.SimulatedArena;
-import org.ironmaple.simulation.seasonspecific.reefscape2025.ReefscapeAlgaeOnField;
+
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.targeting.PhotonTrackedTarget;
-import org.littletonrobotics.junction.LogFileUtil;
+
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
-import org.littletonrobotics.junction.wpilog.WPILOGReader;
-import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 
-import org.littletonrobotics.junction.LogFileUtil;
-import org.littletonrobotics.junction.LoggedRobot;
-import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.NT4Publisher;
-import org.littletonrobotics.junction.wpilog.WPILOGReader;
-import org.littletonrobotics.junction.wpilog.WPILOGWriter;
-
-import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.PowerDistribution;
-import edu.wpi.first.wpilibj.PowerDistribution;
-import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.subsystems.AlgaeSubsystem;
@@ -54,7 +30,6 @@ import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.subsystems.CoralSubsystem;
 
-import edu.wpi.first.networktables.NetworkTableInstance;
 
 /**
  * The methods in this class are called automatically corresponding to each mode, as described in
@@ -70,7 +45,6 @@ public class Robot extends LoggedRobot {
   private ManipulatorSubsystem manipulator = new ManipulatorSubsystem();
   private AlgaeSubsystem algae = new AlgaeSubsystem();
   private CoralSubsystem coral = new CoralSubsystem();
-  private double lastPos = 0;
 
   private final RobotContainer m_robotContainer;
 
@@ -131,7 +105,6 @@ public class Robot extends LoggedRobot {
     }
     if (lowestAmbiguity <= 0.1) {
       var stdDevs = vision.calculateStdDevs(poseReal);
-      var newPose = new Pose2d(poseReal.estimatedPose.toPose2d().getX(), poseReal.estimatedPose.toPose2d().getY(), swerve.getHeading());
       swerve.addVisionMeasurement(poseReal.estimatedPose.toPose2d(), poseReal.timestampSeconds, stdDevs);
     }
 }
@@ -225,11 +198,6 @@ public class Robot extends LoggedRobot {
     SimulatedArena.getInstance().resetFieldForAuto();
     //SimulatedArena.getInstance().addGamePiece(new ReefscapeAlgaeOnField(new Translation2d(2,2)));
   }
-  public void simulationInit() {
-    SimulatedArena.getInstance().resetFieldForAuto();
-    //SimulatedArena.getInstance().addGamePiece(new ReefscapeAlgaeOnField(new Translation2d(2,2)));
-  }
-
   /** This function is called periodically whilst in simulation. */
   @Override
   public void simulationPeriodic() {
