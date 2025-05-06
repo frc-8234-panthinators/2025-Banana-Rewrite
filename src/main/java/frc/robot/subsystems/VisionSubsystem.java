@@ -22,6 +22,7 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -31,6 +32,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Robot;
 import frc.robot.Robot;
 
 public class VisionSubsystem extends SubsystemBase {
@@ -139,6 +141,18 @@ public class VisionSubsystem extends SubsystemBase {
         });
     }
 
+
+    if (Robot.isSimulation()) {
+      gerryPhotonEstimator.update(result).ifPresentOrElse(
+        est ->
+          getSimDebugField()
+            .getObject("VisionEstimation")
+            .setPose(est.estimatedPose.toPose2d()),
+        () -> {
+          getSimDebugField().getObject("VisionEstimation").setPoses();
+        });
+    }
+
     return gerryPhotonEstimator.update(result);
   }
 
@@ -147,6 +161,18 @@ public class VisionSubsystem extends SubsystemBase {
     if (!result.hasTargets()) {
       return Optional.empty();
     }
+
+    if (Robot.isSimulation()) {
+      geofferyPhotonEstimator.update(result).ifPresentOrElse(
+        est ->
+          getSimDebugField()
+            .getObject("VisionEstimation")
+            .setPose(est.estimatedPose.toPose2d()),
+        () -> {
+          getSimDebugField().getObject("VisionEstimation").setPoses();
+        });
+    }
+
 
     if (Robot.isSimulation()) {
       geofferyPhotonEstimator.update(result).ifPresentOrElse(
