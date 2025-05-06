@@ -22,7 +22,7 @@ public class SwerveSubsystem extends SubsystemBase {
     SwerveDrive swerveDrive;
     public SwerveSubsystem() {
         try {
-            double maximumSpeed = Units.feetToMeters(15);
+            double maximumSpeed = Units.feetToMeters(20);
             File swerveJsonDirectory = new File(Filesystem.getDeployDirectory(),"swerve");
             swerveDrive = new SwerveParser(swerveJsonDirectory).createSwerveDrive(maximumSpeed);
         } catch(IOException err) {
