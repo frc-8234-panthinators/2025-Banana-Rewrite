@@ -95,7 +95,7 @@ public class RobotContainer {
 
     //xbox.dpadDownL1.onTrue(new MoveManipulatorToPoint(manipulator, 0).andThen(new MoveElevatorToPoint(elevator, -2).andThen(new HomeElevator(elevator))));
     
-    xbox.cancel.onTrue(new MoveManipulatorToPoint(manipulator, 0).andThen(new MoveElevatorToPoint(elevator, -2).andThen(new HomeElevator(elevator))));
+    xbox.cancel.onTrue(new MoveManipulatorToPoint(manipulator, 0).andThen(new MoveElevatorToPoint(elevator, -6).andThen(new HomeElevator(elevator))));
     xbox.coralIntake.onTrue(new MoveManipulatorToPoint(manipulator, -16).andThen(new IntakeCoral(coral)));
     xbox.coralOuttake.onTrue(new OuttakeCoral(coral));
 
