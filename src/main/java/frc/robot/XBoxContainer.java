@@ -32,7 +32,7 @@ public class XBoxContainer {
 
     public double driveX() {
         if (Math.abs(controller.getLeftX()) >= 0.1) {
-            return(controller.getLeftX() * 0.5);
+            return(controller.getLeftX() * 0.2);
         } else {
             return(0);
         }
@@ -40,7 +40,7 @@ public class XBoxContainer {
 
     public double driveY() {
         if (Math.abs(controller.getLeftY()) >= 0.1) {
-            return(controller.getLeftY() * 0.5);
+            return(controller.getLeftY() * 0.2);
         } else {
             return(0);
         }
@@ -48,7 +48,7 @@ public class XBoxContainer {
 
     public double rotate() {
         if (Math.abs(controller.getRightX()) >= 0.1) {
-            return(controller.getRightX() * 0.8);
+            return(controller.getRightX() * 0.5);
         } else {
             return(0);
         }
