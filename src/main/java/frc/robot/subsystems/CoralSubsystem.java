@@ -23,7 +23,7 @@ public class CoralSubsystem extends SubsystemBase {
     }
 
     public void outtakeCoral() {
-        coralMotor.set(-0.4);
+        coralMotor.set(-1);
     }
 
     public void stopCoral() {
