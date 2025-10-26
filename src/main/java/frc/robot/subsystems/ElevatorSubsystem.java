@@ -1,56 +1,37 @@
 package frc.robot.subsystems;
 
 import java.util.HashMap;
-import java.util.ArrayList;
 import frc.robot.CoralHeights;
 
-import com.revrobotics.spark.ClosedLoopSlot;
-import com.revrobotics.spark.SparkClosedLoopController;
-import com.revrobotics.spark.SparkFlex;
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode;
-import com.revrobotics.RelativeEncoder;
-import com.revrobotics.spark.SparkBase.ControlType;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
-import com.revrobotics.spark.config.SparkBaseConfig;
-import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkFlexConfig;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class ElevatorSubsystem extends SubsystemBase {
-    // CAN IDs for the Neo Vortex motors
+    // CAN IDs for the Neo Vortex motors: update these
     private static final int LEFT_MOTOR_CAN_ID = 15;
     private static final int RIGHT_MOTOR_CAN_ID = 16;
     
-    // PID constants
+    // PID constants; likely need to adjust these, especially maxVel and Accel
     private static final double kP = 0.2;
     private static final double kI = 0.0;
     private static final double kD = 0.0;
-    private static final double kFF = 0.0;
+    private static final double kV = 0.0;
     private static final double maxVel = 1200;
     private static final double maxAccel = 600;
-    private static final double allowedErr = 0.1;
 
     private static HashMap<Integer, CoralHeights> blueCoralHeights = new HashMap<>();
     private static HashMap<Integer, CoralHeights> redCoralHeights = new HashMap<>();
     
     // Motor controllers
-    private final SparkFlex leftMotor;
-    private final SparkFlex rightMotor;
+    private final TalonFX leftMotor;
+    private final TalonFX rightMotor;
 
-    private final SparkBaseConfig leftConfig;
-    private final SparkBaseConfig rightConfig;
-    
-    // Encoders
-    private final RelativeEncoder leftEncoder;
-    private final RelativeEncoder rightEncoder;
-    
-    // PID controllers
-    private final SparkClosedLoopController leftPIDController;
-    private final SparkClosedLoopController rightPIDController;
     
     // Current setpoint
     private double currentSetpoint = 0.0;
@@ -72,55 +53,31 @@ public class ElevatorSubsystem extends SubsystemBase {
         redCoralHeights.put(11, new CoralHeights(new double[] {23, 35, 50.5, 78}, new double[] {23, 35, 50.5, 78}));
 
 
-        // Initialize motor controllers - Neo Vortex is a brushless motor
-        leftMotor = new SparkFlex(LEFT_MOTOR_CAN_ID, MotorType.kBrushless);
-        rightMotor = new SparkFlex(RIGHT_MOTOR_CAN_ID, MotorType.kBrushless);
+        // Initialize motor controllers
+        leftMotor = new TalonFX(LEFT_MOTOR_CAN_ID);
+        rightMotor = new TalonFX(RIGHT_MOTOR_CAN_ID);
         
-        // Configure motors
-        // NOTE: One motor will need to be inverted as they are mounted opposite each other
-        leftConfig = new SparkFlexConfig();
-        rightConfig = new SparkFlexConfig();
+        TalonFXConfiguration config = new TalonFXConfiguration();
 
-        leftConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(80);
-        rightConfig.idleMode(IdleMode.kBrake).smartCurrentLimit(80).follow(leftMotor, true);
-
-        leftConfig.closedLoop
-        .p(kP)
-        .i(kI)
-        .d(kD)
-        .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-        .outputRange(-0.3, 0.3);
-
-        rightConfig.closedLoop
-        .p(kP)
-        .i(kI)
-        .d(kD)
-        .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-        .outputRange(-0.3, 0.3);
-
-        leftConfig.closedLoop.maxMotion
-        .maxVelocity(maxVel)
-        .maxAcceleration(maxAccel)
-        .allowedClosedLoopError(allowedErr);
-
-        rightConfig.closedLoop.maxMotion
-        .maxVelocity(maxVel)
-        .maxAcceleration(maxAccel)
-        .allowedClosedLoopError(allowedErr);
+        config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        config.CurrentLimits.SupplyCurrentLimit = 80; // Amps: is this OK?
+        config.CurrentLimits.SupplyCurrentLimitEnable = true;
         
-        leftMotor.configure(leftConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        rightMotor.configure(rightConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        config.Slot0.kP = kP;
+        config.Slot0.kI = kI;
+        config.Slot0.kD = kD;
+        config.Slot0.kV = kV;
 
-        // Get encoders
-        leftEncoder = leftMotor.getEncoder();
-        rightEncoder = rightMotor.getEncoder();
+        config.MotionMagic.MotionMagicCruiseVelocity = maxVel;
+        config.MotionMagic.MotionMagicAcceleration = maxAccel;
+
+        config.MotorOutput.PeakForwardDutyCycle = 0.3;
+        config.MotorOutput.PeakReverseDutyCycle = -0.3;
         
-        // Get PID controllers
-        leftPIDController = leftMotor.getClosedLoopController();
-        rightPIDController = rightMotor.getClosedLoopController();
-        
-        // Reset encoder positions
-        resetEncoders();
+        leftMotor.getConfigurator().apply(config);
+        rightMotor.getConfigurator().apply(config);
+
+        rightMotor.setControl(new Follower(LEFT_MOTOR_CAN_ID, true));
     }
     
     /**
@@ -147,18 +104,14 @@ public class ElevatorSubsystem extends SubsystemBase {
     }
     
     /**
-     * Reset encoder positions to zero
-     */
-    public void resetEncoders() {
-        leftEncoder.setPosition(0);
-        rightEncoder.setPosition(0);
-    }
-    
-    /**
      * Get the current position of the elevator
      */
     public double getPosition() {
-        return leftEncoder.getPosition();
+        return leftMotor.getPosition().getValueAsDouble();
+    }
+
+    public double getVelocity() {
+        return rightMotor.getVelocity().getValueAsDouble();
     }
     
     /**
@@ -175,8 +128,14 @@ public class ElevatorSubsystem extends SubsystemBase {
     public void setPosition(double position, double kFF) {
         currentSetpoint = position;
         SmartDashboard.putNumber("PID position", position);
-        leftPIDController.setReference(position, ControlType.kPosition, ClosedLoopSlot.kSlot0, kFF);
-        rightPIDController.setReference(-1 * position, ControlType.kPosition, ClosedLoopSlot.kSlot0, kFF);
+        PositionVoltage positionRequest = new PositionVoltage(position)
+        .withSlot(0)            // equivalent to kSlot0
+        .withFeedForward(kFF);  // same as Spark's arbitrary feedforward
+
+        leftMotor.setControl(positionRequest);
+
+        // Right side moves in opposite direction
+        rightMotor.setControl(positionRequest.withPosition(-position));
     }
     
     /**
@@ -194,12 +153,21 @@ public class ElevatorSubsystem extends SubsystemBase {
         leftMotor.set(0);
     }
 
+    public void resetEncoders() { //just resetting motors, idk how much I wanna change language before this works
+        leftMotor.setPosition(0);
+        rightMotor.setPosition(0);
+    }
+
+    public void resetEncoder() {
+        leftMotor.getConfigurator().setPosition(0.0);
+    }
+
     public double getLeftMotorCurrent() {
-        return leftMotor.getOutputCurrent();
+        return leftMotor.getSupplyCurrent().getValueAsDouble();
     }
 
     public double getRightMotorCurrent() {
-        return rightMotor.getOutputCurrent();
+        return rightMotor.getSupplyCurrent().getValueAsDouble();
     }
     
     /**
@@ -211,8 +179,8 @@ public class ElevatorSubsystem extends SubsystemBase {
         final double HOMING_SPEED = -0.1; // Slow downward speed
         
         // Read the current draw from the motors
-        double leftCurrent = leftMotor.getOutputCurrent();
-        double rightCurrent = rightMotor.getOutputCurrent();
+        double leftCurrent = leftMotor.getSupplyCurrent().getValueAsDouble();
+        double rightCurrent = rightMotor.getSupplyCurrent().getValueAsDouble();
         double averageCurrent = (leftCurrent + rightCurrent) / 2.0;
         
         // If current exceeds threshold, we've hit the bottom
@@ -237,8 +205,8 @@ public class ElevatorSubsystem extends SubsystemBase {
         // Publish current positions to SmartDashboard for debugging
         SmartDashboard.putNumber("Elevator Position", getPosition());
         SmartDashboard.putNumber("Elevator Setpoint", currentSetpoint);
-        SmartDashboard.putNumber("Elevator Left Current", leftMotor.getOutputCurrent());
-        SmartDashboard.putNumber("Elevator Right Current", rightMotor.getOutputCurrent());
+        SmartDashboard.putNumber("Manipulator Current", leftMotor.getSupplyCurrent().getValueAsDouble());
+        SmartDashboard.putNumber("Manipulator Current", rightMotor.getSupplyCurrent().getValueAsDouble());
     }
 
     /**
