@@ -18,12 +18,12 @@ public class ElevatorSubsystem extends SubsystemBase {
     private static final int RIGHT_MOTOR_CAN_ID = 16;
     
     // PID constants; likely need to adjust these, especially maxVel and Accel
-    private static final double kP = 0.2;
+    private static final double kP = 0.3;
     private static final double kI = 0.0;
     private static final double kD = 0.0;
     private static final double kV = 0.0;
-    private static final double maxVel = 1200;
-    private static final double maxAccel = 600;
+    private static final double maxVel = 60;
+    private static final double maxAccel = 30;
 
     private static HashMap<Integer, CoralHeights> blueCoralHeights = new HashMap<>();
     private static HashMap<Integer, CoralHeights> redCoralHeights = new HashMap<>();
@@ -176,7 +176,7 @@ public class ElevatorSubsystem extends SubsystemBase {
      * @return true if homing is complete, false if still in progress
      */
     public boolean homeElevator(double currentThreshold) {
-        final double HOMING_SPEED = -0.1; // Slow downward speed
+        final double HOMING_SPEED = 0.1; // Slow downward speed
         
         // Read the current draw from the motors
         double leftCurrent = leftMotor.getSupplyCurrent().getValueAsDouble();

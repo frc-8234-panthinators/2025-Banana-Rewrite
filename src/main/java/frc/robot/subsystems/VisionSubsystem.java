@@ -51,7 +51,7 @@ public class VisionSubsystem extends SubsystemBase {
   public VisionSubsystem() {
     //leftCamera = new PhotonCamera("gerry");
     rightCamera = new PhotonCamera("geoffery");
-    tags = AprilTagFieldLayout.loadField(AprilTagFields.k2025Reefscape);
+    tags = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded);
     /*gerryPhotonEstimator = new PhotonPoseEstimator(tags, PoseStrategy.LOWEST_AMBIGUITY, new Transform3d(
       new Translation3d(
         Units.inchesToMeters(9.875),
